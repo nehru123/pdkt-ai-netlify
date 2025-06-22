@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>PDKT AI Tools WebApp</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; max-width: 700px; margin: auto; }
+    textarea, button { width: 100%; padding: 1rem; margin-top: 1rem; }
+    .output { margin-top: 2rem; background: #f4f4f4; padding: 1rem; border-radius: 8px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>💘 AI Generator Karousel PDKT + Caption</h1>
+  <textarea id="topic" rows="3" placeholder="Contoh: Cara chat cewek biar gak diabaikan..."></textarea>
+  <button onclick="generate()">🎯 Generate Konten Karousel</button>
+  <div class="output" id="output"></div>
+
+  <script>
+    async function generate() {
+      const topic = document.getElementById('topic').value;
+      const output = document.getElementById('output');
+      output.textContent = '⏳ Generating...\n';
+
+      const res = await fetch('http://localhost:3000/stream-carousel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic })
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let content = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.replace('data: ', '');
+            if (data === '[DONE]') return;
+            content += data;
+            output.textContent = content;
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
